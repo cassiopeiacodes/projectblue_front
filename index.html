@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Project Blue - Beta Version</title>
+
+    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+    <link href="css/sb-admin-2.min.css" rel="stylesheet">
+    <link href="src/css/dataTables.bootstrap4.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="node_modules/sweetalert2/dist/sweetalert2.min.css">
+    <link rel="stylesheet" type="text/css" href="src/css/daterangepicker.css" />
+</head>
+
+<body id="page-top">
+    <div id="wrapper">
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion toggled" id="accordionSidebar">
+            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="">
+                <div class="sidebar-brand-icon rotate-n-15">
+                    <i class="fas fa-laugh-wink"></i>
+                </div>
+                <div class="sidebar-brand-text mx-3">PROJECT <sup>BLUE</sup></div>
+            </a>
+            <hr class="sidebar-divider my-0">
+            <div id="defMenuList"></div>
+            <hr class="sidebar-divider">
+            <div class="text-center d-none d-md-inline">
+                <button class="rounded-circle border-0" id="sidebarToggle"></button>
+            </div>
+        </ul>
+        <div id="content-wrapper" class="d-flex flex-column">
+            <div id="content">
+                <div class="container-fluid my-5" id="contentWrapper"></div>
+            </div>
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>Copyright &copy; Project Blue <sup>2022</sup></span>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/sb-admin-2.min.js"></script>
+    <script src="src/js/jquery.dataTables.js"></script>
+    <script src="src/js/dataTables.bootstrap4.min.js"></script>
+    <script src="node_modules/sweetalert2/dist/sweetalert2.all.min.js"></script>
+    <script src="node_modules/jquery-ui/ui/widgets/datepicker.js"></script>
+    <script src="src/js/uuid.min.js" integrity="sha512-UNM1njAgOFUa74Z0bADwAq8gbTcqZC8Ej4xPSzpnh0l6KMevwvkBvbldF9uR++qKeJ+MOZHRjV1HZjoRvjDfNQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script type="text/javascript" src="src/js/moment.min.js"></script>
+    <script type="text/javascript" src="src/js/daterangepicker.min.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script>
+        $(function() {
+            const defMenu = [
+                {
+                    main: "project",
+                    submenu: [
+                        {
+                            name: "Summary",
+                            url: "summary",
+                            icon: "fas fa-fw fa-gauge-high",
+                        },
+                        {
+                            name: "Project",
+                            url: "list",
+                            icon: "fas fa-fw fa-chart-area"
+                        },
+                    ]
+                },
+                {
+                    submenu: [
+                        {
+                            name: "What's New",
+                            url: "new",
+                            icon: "fas fa-fw fa-duotone fa-fire-flame-curved"
+                        },
+                        {
+                            name: "Next Update",
+                            url: "update",
+                            icon: "fas fa-fw fa-duotone fa-bullhorn"
+                        },
+                        {
+                            name: "About Me",
+                            url: "about",
+                            icon: "fas fa-fw fa-duotone fa-mug-hot"
+                        },
+                    ]
+                }
+            ];
+
+            var findCurrentURL = window.location;
+            var baseUrl = findCurrentURL .protocol + "//" + findCurrentURL.host + "/" + findCurrentURL.pathname.split('/')[1];
+            baseUrl = baseUrl.slice(-1) == "/" ? baseUrl : `${baseUrl}/`;
+            baseUrl = baseUrl.slice(-1) == "/" ? baseUrl : `${baseUrl}/`;
+
+            $('#accordionSidebar').find('.active').removeClass('active')
+
+            let menu = ""
+            defMenu.forEach( function ( item, index ) {
+                menu += `<hr class="sidebar-divider">`
+
+                var subfolder = ""
+                if(typeof(item.main) != "undefined" && item.main !== null) {
+                    menu += `<div class="sidebar-heading">${item.main}</div>`
+                    subfolder = item.main.toLowerCase() + '/'
+                }
+
+                if(typeof(item.submenu) != "undefined" && item.submenu !== null) {
+                    item.submenu.forEach(function ( item2 ) {
+                        var active = `<li class="nav-item">`
+                        if( baseUrl +'#' + subfolder + item2.url == window.location.href || item2.url == '' ) {
+                            active = `<li class="nav-item active">`
+                        }
+
+                        var url = item2.url == '' ? 'dashboard' : item2.url
+
+                        menu += active
+                        menu += `<a class="nav-link " href="${baseUrl}#${subfolder}${url}">`
+                        menu += `<i class="${item2.icon}"></i>`
+                        menu += `<span>${item2.name}</span></a>`
+                        menu += `</li>`;
+                    })
+                }
+            });
+
+            $(menu).insertAfter("#defMenuList");
+        })
+
+        $(document).on("ready", function () {
+            var page = window.location.hash;
+            page = page.replace(/^\#/, "");
+            page = page == '' ? 'dashboard' : page;
+
+            $('#accordionSidebar').find('.nav-item').removeClass('active');
+            $(`a[href$='${page}']`).addClass('active');
+        });
+
+        $(window).on('hashchange load',function(){
+            var page = window.location.hash;
+            page = page.replace(/^\#/, "");
+            page = page == '' ? 'dashboard' : page;
+
+            var findCurrentURL = window.location;
+            var baseUrl = findCurrentURL .protocol + "//" + findCurrentURL.host + "/" + findCurrentURL.pathname.split('/')[1];
+            baseUrl = baseUrl.slice(-1) == "/" ? baseUrl : `${baseUrl}/`;
+
+            function UrlExists(url)
+            {
+                var http = new XMLHttpRequest();
+                http.open('HEAD', url, false);
+                http.send();
+
+                return http.status!=404 ? url : 'pages/_common/custom/comming_soon.html';
+            }
+
+            $.get(UrlExists('pages/'+page+'.html'), function(pageContent){
+                $("#contentWrapper").html(pageContent);
+            })
+
+            $('#accordionSidebar').find('.nav-item').removeClass('active');
+            $(`a[href$='${page}']`).parent().addClass('active');
+        });
+    </script>
+</body>
+
+</html>
