@@ -1,0 +1,600 @@
+<div class="card shadow border-left-primary">
+    <div class="card-body">
+        <div class="card-body">
+            <div class="row justify-content-between">
+                <div class="col-auto align-self-start">
+                    <h1 class="h3 mb-2 text-gray-800">My Project</h1>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row align-items-start my-5">
+    <div class="col-auto">
+        <label for="progressProject">Project</label>
+        <input type="text" id="progressProject" name="progressProject" class="form-control"
+               placeholder="Search by project">
+    </div>
+    <div class="col-auto">
+        <label for="progressDate">Date Range</label>
+        <input type="text" id="progressDate" name="progressDateRange" class="form-control">
+    </div>
+    <div class="col-auto">
+        <label for="progressStatus">Status</label>
+        <select class="custom-select mr-sm-2" id="progressStatus" name="progressStatus">
+            <option value="" selected>All</option>
+            <option value="idle">IDLE</option>
+            <option value="process">PROCESSED</option>
+            <option value="on hold">ON HOLD</option>
+            <option value="finish">FINISH</option>
+            <option value="cancel">CANCEL</option>
+        </select>
+    </div>
+</div>
+
+<div class="card shadow my-4">
+    <div class="card-body m-2">
+        <div class="table-responsive mt-4">
+            <table id="tbProjectList" class="table table-hover" width="100%"
+                   cellspacing="0">
+                <thead class="bg-gray-700 text-gray-100"></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="hide">
+    <div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups" id="btnPanel">
+        <button type="button" class="btn btn-light btn-circle btnContentAction" value="add">
+            <i class="fas fa-plus"></i>
+        </button>
+        <button type="button" class="btn btn-light btn-circle btnContentAction" value="edit">
+            <i class="fa-solid fa-pen-to-square"></i>
+        </button>
+        <button type="button" class="btn btn-light btn-circle btnContentAction" value="pending">
+            <i class="fas fa-pause"></i>
+        </button>
+        <button type="button" class="btn btn-light btn-circle btnContentAction" value="finish">
+            <i class="fas fa-check"></i>
+        </button>
+        <button type="button" class="btn btn-light btn-circle btnContentAction" value="cancel">
+            <i class="fas fa-cancel"></i>
+        </button>
+        <button type="button" class="btn btn-light btn-circle btnContentAction" value="delete">
+            <i class="fas fa-trash"></i>
+        </button>
+        <div class="btn-group" role="group">
+            <button id="btnGroupProgress" type="button" class="btn btn-light dropdown-toggle"
+                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Progress Action
+            </button>
+            <div class="dropdown-menu" aria-labelledby="btnGroupProgress">
+                <button type="button" class="dropdown-item btnContentAction"
+                        value="update progress">
+                    Update Progress
+                </button>
+                <button type="button" class="dropdown-item btnContentAction"
+                        value="delete progress">
+                    Delete Progress
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    $(function () {
+        var start = moment().subtract(29, 'days');
+        var end = moment();
+
+        function cb(start, end) {
+            $('#progressDate span').html(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
+        }
+
+        $('#progressDate').daterangepicker({
+            startDate: start,
+            endDate: end,
+            ranges: {
+                'Today': [moment(), moment()],
+                'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+                'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+                'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+                'This Month': [moment().startOf('month'), moment().endOf('month')],
+                'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+            }
+        }, cb);
+
+        cb(start, end);
+
+        var tbProjectList = $('#tbProjectList').DataTable({
+            processing: true,
+            serverSide: true,
+            responsive: true,
+            autoWidth: false,
+            searching: false,
+            orderable: false,
+            select: false,
+            paging: true,
+            responsive: true,
+            ordering: true,
+            order: [[0, "asc"]],
+            dom: '<<"row justify-content-between"<"col-auto align-self-start"l><"#btnGrPlace.col-auto align-self-end">><t>ip>',
+            "ajax": {
+                url: "http://localhost/project",
+                type: "GET",
+                contentType: 'application/json',
+                data: function (d) {
+                    const dtClean = $("input[name=progressDateRange]").val().split(" - ");
+
+                    dtSt = dtClean[0] || moment().add("-30", "days");
+                    dtEnd = dtClean[1] || moment();
+
+                    d.pDateStart = moment(dtSt).format("YYYY-MM-DD").trim();
+                    d.pDateEnd = moment(dtEnd).format("YYYY-MM-DD").trim();
+                    d.pStatus = $("select[name=progressStatus]").val().trim();
+                    d.pProject = $("input[name=progressProject]").val().trim()
+                }
+            },
+            columns: [
+                {data: 'project_name', title: 'Project', defaultContent: '-', width: "15%"},
+                {data: 'project_desc', title: 'Description', defaultContent: '-', width: "50%"},
+                {
+                    data: 'created_at',
+                    title: 'Project Date',
+                    defaultContent: '',
+                    width: "10%",
+                    render: function (data) {
+                        return $.datepicker.formatDate('dd M yy', new Date(data));
+                    }
+                },
+                {
+                    data: 'task',
+                    title: 'Current Activity',
+                    defaultContent: '-',
+                    width: "20%",
+                    render: function (data) {
+                        return data == '' ? '<span class="text-gray-600">~ no task ~</span>' : data;
+                    }
+                },
+                {
+                    data: 'status',
+                    title: 'Progress',
+                    defaultContent: '-',
+                    width: "5%",
+                    render: function (data) {
+                        var out = "";
+                        var color = "secondary";
+
+                        switch (data) {
+                            case 'process':
+                                color = 'primary';
+                                break;
+
+                            case 'on hold':
+                                color = 'warning';
+                                break;
+
+                            case 'finish':
+                                color = 'success';
+                                break;
+
+                            case 'cancel':
+                                color = 'danger';
+                                break;
+                        }
+
+                        out += `<span class="badge btn-${color} p-2 expand-progress">${data.toUpperCase()}</span>`;
+                        return out;
+                    }
+                },
+                {
+                    title: '', data: null, orderable: false,
+                    render: function () {
+                        var btn = "";
+
+                        btn += '<button type="button" class="btn btn-light btn-circle btnExpandProgress">';
+                        btn += '<i class="fa-solid fa-chevron-down"></i>';
+                        btn += '</button>';
+                        return btn;
+                    }
+                }
+            ]
+        });
+
+        $("#btnPanel").appendTo("#btnGrPlace");
+
+        $("#progressStatus,#progressProject,#progressDate,#progressLengthShow").on("change", function () {
+            tbProjectList.ajax
+                .reload(null, false);
+        });
+
+        var actClassRow = "bg-gray-300 selected";
+        $("#tbProjectList tbody").on("click", "tr", function () {
+            if (tbProjectList.row(this).count() == 0) return;
+
+            if ($(this).hasClass(actClassRow)) {
+                $(this).removeClass(actClassRow);
+            } else {
+                $(`#tbProjectList tbody`).find(`tr.${actClassRow.replace(" ", ".")}`).removeClass(actClassRow);
+                $(this).addClass(actClassRow);
+            }
+        });
+
+        $("#tbProjectProgress tbody").on("click", ".btnUpdateProgress", function () {
+            var tr = $(this).closest('tr');
+            var row = tbProjectList.row(tr);
+            var project_id = tbProjectList.row(tr).data().project_id;
+        });
+
+        $("#tbProjectList tbody").on("click", ".btnExpandProgress", function () {
+            var tr = $(this).closest('tr');
+            var row = tbProjectList.row(tr);
+            var project_id = tbProjectList.row(tr).data().project_id;
+
+            if (row.child.isShown()) {
+                row.child.hide();
+                tr.removeClass('shown');
+            } else {
+                const currUUID = uuid.v4();
+                const chartID = `chart-${currUUID}`;
+
+                showGranttChart(tr, row, chartID, project_id);
+            }
+        });
+
+        function showGranttChart(tr, row, uuid, d) {
+            const template = `<div id="${uuid}"></div>`;
+
+            var reqGrantt = $.get(`http://localhost/project/progress/grantt/${d}`);
+
+            reqGrantt.done(function (resp) {
+                row.child(template).show();
+                google.charts.load('current', {'packages': ['gantt']});
+                google.charts.setOnLoadCallback(function () {
+                    var data = new google.visualization.DataTable();
+                    data.addColumn('string', 'Task ID');
+                    data.addColumn('string', 'Task Name');
+                    data.addColumn('date', 'Start Date');
+                    data.addColumn('date', 'End Date');
+                    data.addColumn('number', 'Duration');
+                    data.addColumn('number', 'Percent Complete');
+                    data.addColumn('string', 'Dependencies');
+
+                    var oRes = [];
+                    $.map(resp, function (item) {
+                        oRes.push([
+                            `rowProgress-${item.project_task_id}`,
+                            item.task || "~ no task ~",
+                            new Date(item.created_at),
+                            new Date(item.end_at || moment(item.created_at).add('1', 'days')),
+                            null,
+                            100,
+                            null,
+                        ]);
+                    });
+
+                    data.addRows(oRes);
+
+                    tr.addClass('shown');
+                    var chart = new google.visualization.Gantt(document.getElementById(`${uuid}`));
+                    chart.draw(data, {
+                        height: 400,
+                        gantt: {
+                            defaultStartDate: new Date(2015, 3, 28),
+                            criticalPathEnabled: false,
+                            percentEnabled: false,
+                            trackHeight: 30
+                        },
+                        tooltip: {
+                            isHtml: true
+                        },
+                        vAxis: {
+                            gridlines: {
+                                count: 4
+                            }
+                        }
+                    });
+                });
+
+            });
+        }
+
+        $('.btnContentAction').on('click', function () {
+            var btAct = $(this).val();
+            if (btAct != 'add' && btAct != 'info' && tbProjectList.row('.bg-gray-300.selected').count() == 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: 'You must select data first!',
+                })
+
+                return;
+            }
+
+            var frProject = ''
+            var frAction = ''
+            var frData = ''
+            var project_id = tbProjectList.row('.bg-gray-300.selected').count() > 0 ? tbProjectList.row('.bg-gray-300.selected').data().project_id : 0;
+
+            switch (btAct) {
+                case 'add':
+                case 'edit':
+                    frAction = `http://localhost/project/create/`
+                    frProject = 'pages/form/project/form_add'
+
+                    var dName = ''
+                    var dDesc = ''
+                    var dStatus = 'idle';
+
+                    if (btAct == 'edit') {
+                        data = tbProjectList.row('.bg-gray-300.selected').data();
+                        dName = data.project_name
+                        dDesc = data.project_desc
+                        dStatus = data.status
+                        frAction = `http://localhost/project/create/${project_id}`
+                    }
+
+                    $.get(`${frProject}.html`, function (frContent) {
+                        frContent = frContent.replace("defaultNameValue", `${dName}`);
+                        frContent = frContent.replace("defaultDescriptionValue", `${dDesc}`);
+
+                        Swal.fire({
+                            title: 'Form Project',
+                            width: '70%',
+                            html: frContent,
+                            showCancelButton: true,
+                            confirmButtonText: 'Submit',
+                            showLoaderOnConfirm: true,
+                            allowOutsideClick: () => !Swal.isLoading(),
+                        }).then((res) => {
+                            if (res.isConfirmed) {
+                                var request = $.ajax({
+                                    type: btAct == 'edit' ? 'PUT' : 'POST',
+                                    url: frAction,
+                                    data: $("#frProjectAdd").serializeArray(),
+                                    dataType: 'json',
+                                    encode: true
+                                })
+                                request.done(function (resp) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        text: resp.message,
+                                    })
+
+                                    tbProjectList.ajax
+                                        .reload(null, false);
+                                });
+
+                                request.fail(function (jqXHR) {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        text: jqXHR.responseJSON.message || "unidentified error"
+                                    });
+                                });
+                            }
+                        });
+                    }, 'html');
+                    break;
+                case 'delete':
+                    frData = {
+                        data: project_id
+                    };
+                    frAction = 'http://localhost/project/delete'
+                    $.ajax({
+                        type: "delete",
+                        url: frAction,
+                        data: frData,
+                        dataType: 'json',
+                        encode: true,
+                    }).done(function (resp) {
+                        tbProjectList.ajax
+                            .reload(null, false);
+                    });
+                    break;
+                case 'update progress':
+                    frAction = `http://localhost/project/progress/create/${project_id}`
+                    frProject = 'pages/form/project/form_progress'
+
+                    var rData = tbProjectList.row('.bg-gray-300.selected').data();
+                    $.get(`${frProject}.html`, function (frContent) {
+                        Swal.fire({
+                            title: 'Form Project',
+                            width: '50%',
+                            html: frContent,
+                            showCancelButton: true,
+                            confirmButtonText: 'Submit',
+                            showLoaderOnConfirm: true,
+                            allowOutsideClick: () => !Swal.isLoading(),
+                        }).then((res) => {
+                            if (res.isConfirmed) {
+                                var request = $.ajax({
+                                    type: 'POST',
+                                    url: frAction,
+                                    data: {
+                                        "iTask" : $("input[name=iTask]").val(),
+                                        "iStatus": rData.status
+                                    },
+                                    dataType: 'json',
+                                    encode: true
+                                });
+                                request.done(function (resp) {
+                                    Swal.fire({
+                                        icon: resp.status,
+                                        text: resp.message,
+                                    })
+
+                                    tbProjectList.ajax
+                                        .reload(null, false);
+                                });
+                                request.fail(function (jqXHR) {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        text: jqXHR.responseJSON.message || "unidentified error"
+                                    });
+                                });
+                            }
+                        });
+                    }, 'html');
+                    break;
+                case 'delete progress':
+                    frAction = `http://localhost/project/progress/delete`
+                    frProject = 'pages/form/project/form_delete_progress'
+
+                    $.get(`${frProject}.html`, function (frContent) {
+                        Swal.fire({
+                            title: 'Delete Project',
+                            width: '70%',
+                            html: frContent,
+                            showCancelButton: true,
+                            confirmButtonText: 'Submit',
+                            showLoaderOnConfirm: true,
+                            allowOutsideClick: () => !Swal.isLoading(),
+                        }).then((res) => {
+                            if (res.isConfirmed) {
+                                var d = [];
+                                var data = tbProgress.rows('.deletedData').data().each(function (val, tr) {
+                                    d.push(val.project_task_id);
+                                });
+
+                                var request = $.ajax({
+                                    type: 'delete',
+                                    url: frAction,
+                                    data: {"iProject": d},
+                                    dataType: 'json',
+                                    encode: true,
+                                    async: true,
+                                    crossDomain: true,
+                                });
+                                request.done(function (resp) {
+                                    Swal.fire({
+                                        icon: resp.status,
+                                        text: resp.message,
+                                    })
+
+                                    tbProjectList.ajax
+                                        .reload(null, false);
+                                });
+                                request.fail(function (jqXHR) {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        text: jqXHR.responseJSON.message || "unidentified error"
+                                    });
+                                });
+                            }
+                        });
+
+                        var tbProgress = $("#tbEditProgress").DataTable({
+                            processing: true,
+                            serverSide: true,
+                            responsive: true,
+                            autoWidth: false,
+                            searching: false,
+                            orderable: false,
+                            select: false,
+                            paging: false,
+                            responsive: true,
+                            ordering: false,
+                            order: [[0, "asc"]],
+                            "ajax": {
+                                url: `http://localhost/project/progress/${project_id}`,
+                                type: "GET",
+                                contentType: 'application/json',
+                            },
+                            columns: [
+                                {
+                                    data: 'task', title: 'Activity', defaultContent: '-', render: function (d) {
+                                        return d.toUpperCase()
+                                    }
+                                },
+                                {
+                                    data: 'created_at',
+                                    title: 'Start Date',
+                                    defaultContent: '',
+                                    render: function (data) {
+                                        return $.datepicker.formatDate('dd MM yy', new Date(data));
+                                    }
+                                },
+                                {
+                                    data: 'end_at', title: 'Closed Date', defaultContent: '-', render: function (data) {
+                                        return $.datepicker.formatDate('dd MM yy', new Date(data));
+                                    }
+                                },
+                            ]
+                        });
+
+                        $("#tbEditProgress tbody").on("click", "tr", function () {
+                            if (tbProgress.row(this).count() == 0) return;
+
+                            if ($(this).hasClass('bg-gray-300 deletedData')) {
+                                $(this).removeClass('bg-gray-300 deletedData');
+                            } else {
+                                // $(`#tbProjectList tbody`).find(`tr.${actClassRow.replace(" ", ".")}`).removeClass(actClassRow);
+                                $(this).addClass('bg-gray-300 deletedData');
+                            }
+                        });
+
+                    }, 'html');
+                    break;
+                case 'finish':
+                case 'cancel':
+                case 'pending':
+                    frAction = `http://localhost/project/closing/`
+
+                    var rData = tbProjectList.row('.bg-gray-300.selected').data();
+
+                    Swal.fire({
+                        icon: 'warning',
+                        // title: `Confirmation`,
+                        width: '70%',
+                        text: `Continue to process this project status as ${btAct} ?`,
+                        showCancelButton: true,
+                        confirmButtonText: 'Continue',
+                        showLoaderOnConfirm: true,
+                        allowOutsideClick: () => !Swal.isLoading(),
+                    }).then((res) => {
+                        if (res.isConfirmed) {
+                            var request = $.ajax({
+                                type: 'POST',
+                                url: frAction,
+                                data: {
+                                    "iAction": btAct,
+                                    "iStatus": rData.status,
+                                    "iProject": project_id
+                                },
+                                dataType: 'json',
+                                encode: true
+                            })
+                            request.done(function (resp) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    text: resp.message,
+                                })
+
+                                tbProjectList.ajax
+                                    .reload(null, false);
+                            });
+
+                            request.fail(function (jqXHR) {
+                                Swal.fire({
+                                    icon: 'error',
+                                    text: jqXHR.responseJSON.message || "unidentified error"
+                                });
+                            });
+                        }
+                    });
+                    break;
+                default:
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: 'No action for this button!',
+                    })
+                    return;
+            }
+        })
+    })
+</script>
+

@@ -1,0 +1,123 @@
+<div class="row" id="contentSummary"></div>
+
+<div class="row">
+    <div class="col-xl-7 col-lg-7">
+        <div class="card mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Latest Project Update</h6>
+            </div>
+            <div class="card-body">
+                <div id="listLatestMonthly"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-5 col-lg-5">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Monthly Overview</h6>
+            </div>
+            <div class="card-body" id="chartSummaryMonthly" style="min-height: 400px">
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    $(function () {
+        var reqSummary = $.get("http://localhost/project/summary");
+        reqSummary.done(function (resp) {
+            const defCardSummary = `<div class="col-xl col-md-6 mb-4"><div class="card border-left-defTotalColor shadow h-100 py-2"><div class="card-body"><div class="row no-gutters align-items-center"><div class="col mr-2"><div class="text-xs font-weight-bold text-defTotalColor text-uppercase mb-1">defTotalTitle</div><div class="h5 mb-0 font-weight-bold text-gray-800">defTotalValue</div></div><div class="col-auto"><i class="fas defTotalIcon fa-2x text-gray-300"></i></div></div></div></div></div>`;
+            var drawSummary = '';
+
+            var dtSummary = resp['summary'];
+            drawSummary += defCardSummary.replace('defTotalValue', dtSummary.tot_idle || 0)
+                .replace(`defTotalIcon`, `fa-layer-group`)
+                .replace('defTotalTitle', 'TOTAL IDLE PROJECT')
+                .replace('defTotalColor', 'secondary');
+            drawSummary += defCardSummary.replace('defTotalValue', dtSummary.tot_process || 0)
+                .replace(`defTotalIcon`, `fa-spinner`)
+                .replace('defTotalTitle', 'TOTAL PROCESSED PROJECT')
+                .replace('defTotalColor', 'primary');
+            drawSummary += defCardSummary.replace('defTotalValue', dtSummary.tot_on_hold || 0)
+                .replace(`defTotalIcon`, `fa-folder`)
+                .replace('defTotalTitle', 'TOTAL PENDING PROJECT')
+                .replace('defTotalColor', 'warning');
+            drawSummary += defCardSummary.replace('defTotalValue', dtSummary.tot_finish || 0)
+                .replace(`defTotalIcon`, `fa-clipboard-list`)
+                .replace('defTotalTitle', 'TOTAL FINISH PROJECT')
+                .replace('defTotalColor', 'success');
+            drawSummary += defCardSummary.replace('defTotalValue', dtSummary.tot_cancel || 0)
+                .replace(`defTotalIcon`, `fa-ban`)
+                .replace('defTotalTitle', 'TOTAL CANCEL PROJECT')
+                .replace('defTotalColor', 'danger');
+            $("#contentSummary").append(drawSummary);
+
+
+            var dtMonthly = resp["monthly"];
+            google.charts.load("current", {packages: ["corechart"]});
+            google.charts.setOnLoadCallback(function () {
+                var dtMonthly = resp['monthly'];
+                var data = google.visualization.arrayToDataTable([
+                    ['Status', 'Total Updated ( Monthly )'],
+                    ['IDLE', dtMonthly.tot_idle || 0],
+                    ['PROCESS', dtMonthly.tot_process || 0],
+                    ['ON HOLD', dtMonthly.tot_on_hold || 0],
+                    ['FINISH', dtMonthly.tot_finish || 0],
+                    ['CANCEL', dtMonthly.tot_cancel || 0]
+                ]);
+
+                var chart = new google.visualization.PieChart(document.getElementById('chartSummaryMonthly'));
+                chart.draw(data, {
+                    is3D: true,
+                    pieStartAngle: 100,
+                    legend: {
+                        position: 'bottom'
+                    }
+                });
+            });
+
+            const defCardLatest = `<div class="card mb-2"><div class="card-body"><h5 class="card-title"><button type="button" class="btn btn-defCardColor">defCardTitle<span class="badge badge-light ml-3">defCardStatus</span>
+</button></h5>defCardText<footer class="blockquote-footer">defCardDate</footer></div></div>`;
+            var defContain = '';
+            $.map(resp['latest'], function (item) {
+                var defColor = 'secondary';
+                switch (item.status) {
+                    case 'process':
+                        defColor = 'primary';
+                        break;
+
+                    case 'on hold':
+                        defColor = 'warning';
+                        break;
+
+                    case 'finish':
+                        defColor = 'success';
+                        break;
+
+                    case 'cancel':
+                        defColor = 'danger';
+                        break;
+                }
+
+                defContain += defCardLatest.replace('defCardTitle', item.project_name.toUpperCase() || '- no project name -')
+                    .replace('defCardText', item.task || '- no project action -')
+                    .replace('defCardDate', moment(item.latest_update || moment()).format('MMMM D, YYYY'))
+                    .replace('defCardColor', defColor)
+                    .replace('defCardStatus', item.status.toUpperCase() || '- no status -')
+            });
+
+            if (defContain == '') {
+                defContain += defCardLatest.replace('defCardTitle', '')
+                    .replace('defCardText', 'Empty project')
+                    .replace('defCardDate', moment().format('MMMM D, YYYY'))
+                    .replace('defCardColor', '')
+                    .replace('defCardStatus', '')
+            }
+            $("#listLatestMonthly").append(defContain);
+        });
+
+
+    });
+</script>
